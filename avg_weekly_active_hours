@@ -1,0 +1,41 @@
+--Average Weekly Active working hours
+
+WITH valid_entries AS (
+    SELECT
+        resource_id,
+        date,
+        CAST(strftime('%s', end_time) AS INTEGER) - CAST(strftime('%s', start_time) AS INTEGER) AS seconds_worked
+    FROM
+        test
+    WHERE
+        is_clock_in = 1 AND is_clock_out = 1
+),
+daily_hours AS (
+    SELECT
+        resource_id,
+        date,
+        SUM(seconds_worked) / 3600.0 AS daily_active_hours
+    FROM
+        valid_entries
+    GROUP BY
+        resource_id, date
+),
+weekly_hours AS (
+    SELECT
+        resource_id,
+        strftime('%Y', date) AS year,
+        strftime('%W', date) AS week,
+        SUM(daily_active_hours) AS total_weekly_hours
+    FROM
+        daily_hours
+    GROUP BY
+        resource_id, year, week
+)
+SELECT
+    resource_id,
+    AVG(total_weekly_hours) AS avg_weekly_active_hours
+FROM
+    weekly_hours
+GROUP BY
+    resource_id;
+
